@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { searchFoods } from '../utils/search';
 import { searchUsda } from '../utils/usda';
 import { saveCustomFood } from '../utils/customFoods';
@@ -16,21 +16,33 @@ export function FoodSearch({ onAdd }: Props) {
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [usdaResults, setUsdaResults] = useState<FoodItem[]>([]);
   const [usdaLoading, setUsdaLoading] = useState(false);
+  const [usdaPage, setUsdaPage] = useState(0);
+  const [usdaTotalPages, setUsdaTotalPages] = useState(0);
   const [showUsda, setShowUsda] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const interactingRef = useRef(false);
 
   const localResults = searchFoods(query);
   const displayResults = showUsda ? usdaResults : localResults;
-  const showDropdown = isOpen && (displayResults.length > 0 || usdaLoading) && !selectedFood;
+  const showDropdown = isOpen && query.length >= 2 && !selectedFood;
+  const hasMorePages = showUsda && usdaPage < usdaTotalPages;
+
+  const showSearchUsdaAction = !showUsda && !usdaLoading;
+  const showLoadMoreAction = hasMorePages && !usdaLoading;
+  const actionIndex = showSearchUsdaAction || showLoadMoreAction ? displayResults.length : -1;
+  const maxIndex = actionIndex >= 0 ? actionIndex : displayResults.length - 1;
 
   useEffect(() => {
     setActiveIndex(-1);
     setShowUsda(false);
     setUsdaResults([]);
+    setUsdaPage(0);
+    setUsdaTotalPages(0);
   }, [query]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      if (interactingRef.current) return;
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
@@ -39,18 +51,42 @@ export function FoodSearch({ onAdd }: Props) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  async function handleSearchUsda() {
+  useEffect(() => {
+    if (showDropdown) {
+      document.documentElement.classList.add('dropdown-open');
+    } else {
+      document.documentElement.classList.remove('dropdown-open');
+    }
+    return () => { document.documentElement.classList.remove('dropdown-open'); };
+  }, [showDropdown]);
+
+  const handleDropdownMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    interactingRef.current = true;
+    requestAnimationFrame(() => { interactingRef.current = false; });
+  }, []);
+
+  async function handleSearchUsda(page = 1) {
     if (query.length < 2) return;
     setUsdaLoading(true);
     setShowUsda(true);
+    setIsOpen(true);
+    setActiveIndex(-1);
     try {
-      const results = await searchUsda(query);
-      setUsdaResults(results);
+      const result = await searchUsda(query, page);
+      if (page === 1) {
+        setUsdaResults(result.foods);
+      } else {
+        setUsdaResults(prev => [...prev, ...result.foods]);
+      }
+      setUsdaPage(result.currentPage);
+      setUsdaTotalPages(result.totalPages);
     } catch (e) {
       console.error('USDA search failed:', e);
-      setUsdaResults([]);
+      if (page === 1) setUsdaResults([]);
     } finally {
       setUsdaLoading(false);
+      setIsOpen(true);
     }
   }
 
@@ -79,24 +115,40 @@ export function FoodSearch({ onAdd }: Props) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (showDropdown) {
-      if (e.key === 'ArrowDown') {
+    if (!showDropdown) {
+      if (e.key === 'Enter' && selectedFood) {
         e.preventDefault();
-        setActiveIndex(i => Math.min(i + 1, displayResults.length - 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setActiveIndex(i => Math.max(i - 1, 0));
-      } else if (e.key === 'Enter' && activeIndex >= 0) {
-        e.preventDefault();
-        handleSelect(displayResults[activeIndex]);
-      } else if (e.key === 'Escape') {
-        setIsOpen(false);
+        handleAdd();
       }
-    } else if (e.key === 'Enter' && selectedFood) {
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      handleAdd();
+      setActiveIndex(i => (i < maxIndex ? i + 1 : i));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(i => (i > 0 ? i - 1 : 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < displayResults.length) {
+        handleSelect(displayResults[activeIndex]);
+      } else if (activeIndex === actionIndex) {
+        if (showSearchUsdaAction) {
+          handleSearchUsda();
+        } else if (showLoadMoreAction) {
+          handleSearchUsda(usdaPage + 1);
+        }
+      }
     }
   }
+
+  const isActionActive = activeIndex === actionIndex;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -117,45 +169,69 @@ export function FoodSearch({ onAdd }: Props) {
             aria-activedescendant={activeIndex >= 0 ? `food-option-${activeIndex}` : undefined}
           />
           {showDropdown && (
-            <ul
-              role="listbox"
-              className="absolute z-50 mt-1 w-full max-h-60 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg"
+            <div
+              className="absolute z-50 mt-1 w-full max-h-72 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg"
+              onMouseDown={handleDropdownMouseDown}
             >
-              {usdaLoading && (
-                <li className="px-3 py-2 text-sm text-gray-400">Searching USDA...</li>
+              {displayResults.length > 0 && (
+                <ul role="listbox">
+                  {displayResults.map((food, i) => (
+                    <li
+                      key={food.id}
+                      id={`food-option-${i}`}
+                      role="option"
+                      aria-selected={i === activeIndex}
+                      onClick={() => handleSelect(food)}
+                      onMouseEnter={() => setActiveIndex(i)}
+                      className={`px-3 py-2 text-sm cursor-pointer ${
+                        i === activeIndex ? 'bg-blue-50 text-blue-900' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="font-medium">{food.name}</span>
+                      <span className="ml-2 text-xs text-gray-400">{food.category}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
-              {displayResults.map((food, i) => (
-                <li
-                  key={food.id}
-                  id={`food-option-${i}`}
-                  role="option"
-                  aria-selected={i === activeIndex}
-                  onMouseDown={() => handleSelect(food)}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  className={`px-3 py-2 text-sm cursor-pointer ${
-                    i === activeIndex ? 'bg-blue-50 text-blue-900' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+              {showSearchUsdaAction && (
+                <div
+                  className={`border-t border-gray-100 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                  onClick={() => handleSearchUsda()}
+                  onMouseEnter={() => setActiveIndex(actionIndex)}
                 >
-                  <span className="font-medium">{food.name}</span>
-                  <span className="ml-2 text-xs text-gray-400">{food.category}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {isOpen && !selectedFood && localResults.length === 0 && query.length >= 2 && !showUsda && (
-            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-3">
-              <p className="text-sm text-gray-500 mb-2">No local results for "{query}"</p>
-              <button
-                onMouseDown={handleSearchUsda}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Search USDA database...
-              </button>
-            </div>
-          )}
-          {showUsda && !usdaLoading && usdaResults.length === 0 && (
-            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-3">
-              <p className="text-sm text-gray-500">No results found in USDA database.</p>
+                  <span className={`text-sm font-medium ${isActionActive ? 'text-blue-800' : 'text-blue-600'}`}>
+                    Search USDA database...
+                  </span>
+                </div>
+              )}
+              {usdaLoading && (
+                <div className="border-t border-gray-100 px-3 py-3 flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span className="text-sm text-gray-500">Searching USDA database...</span>
+                </div>
+              )}
+              {showUsda && !usdaLoading && usdaResults.length === 0 && (
+                <div className="border-t border-gray-100 px-3 py-2">
+                  <p className="text-sm text-gray-500">No results found in USDA database.</p>
+                </div>
+              )}
+              {showLoadMoreAction && (
+                <div
+                  className={`border-t border-gray-100 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                  onClick={() => handleSearchUsda(usdaPage + 1)}
+                  onMouseEnter={() => setActiveIndex(actionIndex)}
+                >
+                  <span className={`group inline-flex items-center gap-1.5 text-sm font-medium ${isActionActive ? 'text-blue-800' : 'text-blue-600'}`}>
+                    Load more results
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

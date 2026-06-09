@@ -30,21 +30,32 @@ const NUTRIENT_MAP: Record<number, string> = {
   1185: 'vitaminK',
   1175: 'vitaminB6',
   1178: 'vitaminB12',
+  1165: 'thiamin',
+  1166: 'riboflavin',
+  1167: 'niacin',
   1177: 'folate',
+  1180: 'choline',
   1087: 'calcium',
   1089: 'iron',
   1090: 'magnesium',
   1092: 'potassium',
   1093: 'sodium',
   1095: 'zinc',
+  1103: 'selenium',
+  1098: 'copper',
+  1101: 'manganese',
+  1100: 'iodine',
+  1091: 'phosphorus',
 };
 
 function mapUsdaFood(usda: UsdaFood): FoodItem {
   const macros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
   const micros = {
     vitaminA: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0,
-    vitaminB6: 0, vitaminB12: 0, folate: 0,
+    vitaminB6: 0, vitaminB12: 0, thiamin: 0, riboflavin: 0, niacin: 0,
+    folate: 0, choline: 0,
     calcium: 0, iron: 0, magnesium: 0, potassium: 0, sodium: 0, zinc: 0,
+    selenium: 0, copper: 0, manganese: 0, iodine: 0, phosphorus: 0,
   };
 
   for (const n of usda.foodNutrients) {
@@ -66,11 +77,18 @@ function mapUsdaFood(usda: UsdaFood): FoodItem {
   };
 }
 
-export async function searchUsda(query: string): Promise<FoodItem[]> {
+export interface UsdaSearchResult {
+  foods: FoodItem[];
+  totalPages: number;
+  currentPage: number;
+}
+
+export async function searchUsda(query: string, page = 1): Promise<UsdaSearchResult> {
   const params = new URLSearchParams({
     api_key: API_KEY,
     query,
     pageSize: '10',
+    pageNumber: String(page),
     dataType: 'SR Legacy,Foundation',
   });
 
@@ -78,5 +96,9 @@ export async function searchUsda(query: string): Promise<FoodItem[]> {
   if (!res.ok) throw new Error(`USDA API error: ${res.status}`);
 
   const data = await res.json();
-  return (data.foods || []).map(mapUsdaFood);
+  return {
+    foods: (data.foods || []).map(mapUsdaFood),
+    totalPages: Math.ceil((data.totalHits || 0) / 10),
+    currentPage: page,
+  };
 }
