@@ -39,16 +39,16 @@ export function NutrientProgressBar({ nutrient, current }: Props) {
   return (
     <div>
       <div
-        className={`flex items-center gap-3 py-1 ${showDropdown ? 'cursor-pointer hover:bg-gray-50 rounded -mx-1 px-1' : ''}`}
+        className={`flex items-center gap-3 py-1 ${showDropdown ? 'cursor-pointer hover:bg-gray-700/50 rounded -mx-1 px-1' : ''}`}
         onClick={showDropdown ? () => setExpanded(!expanded) : undefined}
       >
-        <div className="w-24 text-sm text-gray-600 shrink-0 flex items-center gap-1">
+        <div className="w-24 text-sm text-gray-300 shrink-0 flex items-center gap-1">
           {showDropdown && (
-            <span className={`text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}>▶</span>
+            <span className={`text-[10px] text-gray-500 transition-transform ${expanded ? 'rotate-90' : ''}`}>▶</span>
           )}
           {nutrient.label}
         </div>
-        <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${barColor}`}
             style={{ width: `${clampedWidth}%` }}
@@ -57,7 +57,7 @@ export function NutrientProgressBar({ nutrient, current }: Props) {
             aria-valuemax={nutrient.rda}
           />
         </div>
-        <div className="w-28 text-right text-xs text-gray-500 tabular-nums shrink-0">
+        <div className="w-28 text-right text-xs text-gray-400 tabular-nums shrink-0">
           {formatValue(current)} / {nutrient.rda} {nutrient.unit}
         </div>
         <div className="w-12 text-right text-xs font-medium tabular-nums shrink-0"
@@ -82,14 +82,14 @@ function TopFoodsDropdown({ nutrientKey, unit }: { nutrientKey: string; unit: st
   if (topFoods.length === 0) return null;
 
   return (
-    <div className="ml-8 mr-12 mb-2 mt-1 bg-gray-50 rounded border border-gray-100 p-2">
-      <div className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">Top foods (per 100g)</div>
+    <div className="ml-8 mr-12 mb-2 mt-1 bg-gray-700/50 rounded border border-gray-600 p-2">
+      <div className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Top foods (per 100g)</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
         {topFoods.map(({ food, value }, i) => (
-          <div key={food.id} className="flex items-baseline gap-1.5 text-xs text-gray-600">
-            <span className="text-gray-400 w-4 text-right shrink-0">{i + 1}.</span>
+          <div key={food.id} className="flex items-baseline gap-1.5 text-xs text-gray-300">
+            <span className="text-gray-500 w-4 text-right shrink-0">{i + 1}.</span>
             <span className="truncate">{food.name}</span>
-            <span className="text-gray-400 ml-auto shrink-0">{formatValue(value)} {unit}</span>
+            <span className="text-gray-500 ml-auto shrink-0">{formatValue(value)} {unit}</span>
           </div>
         ))}
       </div>

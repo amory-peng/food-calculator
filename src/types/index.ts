@@ -56,3 +56,20 @@ export interface NutrientInfo {
 }
 
 export type NutrientTotals = Record<string, number>;
+
+export interface MacroTargets {
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface FoodMacroOverride {
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+}
+
+export type FoodMacroOverrides = Record<string, FoodMacroOverride>;

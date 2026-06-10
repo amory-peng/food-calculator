@@ -151,11 +151,11 @@ export function FoodSearch({ onAdd }: Props) {
   const isActionActive = activeIndex === actionIndex;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">Add Food</h2>
+    <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
+      <h2 className="text-lg font-semibold text-gray-100 mb-3">Add Food</h2>
       <div className="flex items-end gap-3">
         <div ref={containerRef} className="relative flex-1">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Food</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1">Food</label>
           <input
             type="text"
             value={query}
@@ -163,14 +163,14 @@ export function FoodSearch({ onAdd }: Props) {
             onFocus={() => { if (!selectedFood) setIsOpen(true); }}
             onKeyDown={handleKeyDown}
             placeholder="Search food..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             role="combobox"
             aria-expanded={showDropdown}
             aria-activedescendant={activeIndex >= 0 ? `food-option-${activeIndex}` : undefined}
           />
           {showDropdown && (
             <div
-              className="absolute z-50 mt-1 w-full max-h-72 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg"
+              className="absolute z-50 mt-1 w-full max-h-72 overflow-auto bg-gray-800 border border-gray-600 rounded-md shadow-lg"
               onMouseDown={handleDropdownMouseDown}
             >
               {displayResults.length > 0 && (
@@ -184,47 +184,47 @@ export function FoodSearch({ onAdd }: Props) {
                       onClick={() => handleSelect(food)}
                       onMouseEnter={() => setActiveIndex(i)}
                       className={`px-3 py-2 text-sm cursor-pointer ${
-                        i === activeIndex ? 'bg-blue-50 text-blue-900' : 'text-gray-700 hover:bg-gray-50'
+                        i === activeIndex ? 'bg-blue-900/50 text-blue-200' : 'text-gray-200 hover:bg-gray-700'
                       }`}
                     >
                       <span className="font-medium">{food.name}</span>
-                      <span className="ml-2 text-xs text-gray-400">{food.category}</span>
+                      <span className="ml-2 text-xs text-gray-500">{food.category}</span>
                     </li>
                   ))}
                 </ul>
               )}
               {showSearchUsdaAction && (
                 <div
-                  className={`border-t border-gray-100 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                  className={`border-t border-gray-700 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-900/50' : 'hover:bg-gray-700'}`}
                   onClick={() => handleSearchUsda()}
                   onMouseEnter={() => setActiveIndex(actionIndex)}
                 >
-                  <span className={`text-sm font-medium ${isActionActive ? 'text-blue-800' : 'text-blue-600'}`}>
+                  <span className={`text-sm font-medium ${isActionActive ? 'text-blue-300' : 'text-blue-400'}`}>
                     Search USDA database...
                   </span>
                 </div>
               )}
               {usdaLoading && (
-                <div className="border-t border-gray-100 px-3 py-3 flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none">
+                <div className="border-t border-gray-700 px-3 py-3 flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-blue-400" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  <span className="text-sm text-gray-500">Searching USDA database...</span>
+                  <span className="text-sm text-gray-400">Searching USDA database...</span>
                 </div>
               )}
               {showUsda && !usdaLoading && usdaResults.length === 0 && (
-                <div className="border-t border-gray-100 px-3 py-2">
-                  <p className="text-sm text-gray-500">No results found in USDA database.</p>
+                <div className="border-t border-gray-700 px-3 py-2">
+                  <p className="text-sm text-gray-400">No results found in USDA database.</p>
                 </div>
               )}
               {showLoadMoreAction && (
                 <div
-                  className={`border-t border-gray-100 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                  className={`border-t border-gray-700 px-3 py-2 cursor-pointer ${isActionActive ? 'bg-blue-900/50' : 'hover:bg-gray-700'}`}
                   onClick={() => handleSearchUsda(usdaPage + 1)}
                   onMouseEnter={() => setActiveIndex(actionIndex)}
                 >
-                  <span className={`group inline-flex items-center gap-1.5 text-sm font-medium ${isActionActive ? 'text-blue-800' : 'text-blue-600'}`}>
+                  <span className={`group inline-flex items-center gap-1.5 text-sm font-medium ${isActionActive ? 'text-blue-300' : 'text-blue-400'}`}>
                     Load more results
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -236,26 +236,26 @@ export function FoodSearch({ onAdd }: Props) {
           )}
         </div>
         <div className="w-24">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Grams</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1">Grams</label>
           <input
             type="number"
             min="0"
             value={grams || ''}
             onChange={e => setGrams(Math.max(0, parseFloat(e.target.value) || 0))}
             onKeyDown={handleKeyDown}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-sm text-right text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={!selectedFood}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
         >
           Add
         </button>
       </div>
       {selectedFood && (
-        <p className="mt-2 text-xs text-green-600">
+        <p className="mt-2 text-xs text-green-400">
           Ready to add: {selectedFood.name} ({grams}g)
         </p>
       )}

@@ -89,7 +89,7 @@ export async function searchUsda(query: string, page = 1): Promise<UsdaSearchRes
     query,
     pageSize: '10',
     pageNumber: String(page),
-    dataType: 'SR Legacy,Foundation',
+    dataType: 'SR Legacy',
   });
 
   const res = await fetch(`${BASE_URL}/foods/search?${params}`);
