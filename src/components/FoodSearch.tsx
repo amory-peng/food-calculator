@@ -19,6 +19,7 @@ export function FoodSearch({ onAdd }: Props) {
   const [usdaPage, setUsdaPage] = useState(0);
   const [usdaTotalPages, setUsdaTotalPages] = useState(0);
   const [showUsda, setShowUsda] = useState(false);
+  const [usdaError, setUsdaError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const interactingRef = useRef(false);
 
@@ -38,6 +39,7 @@ export function FoodSearch({ onAdd }: Props) {
     setUsdaResults([]);
     setUsdaPage(0);
     setUsdaTotalPages(0);
+    setUsdaError(null);
   }, [query]);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function FoodSearch({ onAdd }: Props) {
     setShowUsda(true);
     setIsOpen(true);
     setActiveIndex(-1);
+    setUsdaError(null);
     try {
       const result = await searchUsda(query, page);
       if (page === 1) {
@@ -82,7 +85,12 @@ export function FoodSearch({ onAdd }: Props) {
       setUsdaPage(result.currentPage);
       setUsdaTotalPages(result.totalPages);
     } catch (e) {
-      console.error('USDA search failed:', e);
+      const msg = e instanceof Error ? e.message : '';
+      if (msg === 'RATE_LIMITED') {
+        setUsdaError('Rate limited by USDA API. Please wait a moment and try again.');
+      } else {
+        setUsdaError('USDA search failed. Please try again.');
+      }
       if (page === 1) setUsdaResults([]);
     } finally {
       setUsdaLoading(false);
@@ -213,7 +221,12 @@ export function FoodSearch({ onAdd }: Props) {
                   <span className="text-sm text-gray-400">Searching USDA database...</span>
                 </div>
               )}
-              {showUsda && !usdaLoading && usdaResults.length === 0 && (
+              {usdaError && (
+                <div className="border-t border-gray-700 px-3 py-2">
+                  <p className="text-sm text-yellow-400">{usdaError}</p>
+                </div>
+              )}
+              {showUsda && !usdaLoading && !usdaError && usdaResults.length === 0 && (
                 <div className="border-t border-gray-700 px-3 py-2">
                   <p className="text-sm text-gray-400">No results found in USDA database.</p>
                 </div>

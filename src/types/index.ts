@@ -45,6 +45,8 @@ export interface FoodEntry {
   foodId: string | null;
   foodName: string;
   amountGrams: number;
+  customMacros?: Partial<Macros>;
+  customMicros?: Partial<Micros>;
 }
 
 export interface NutrientInfo {
@@ -58,6 +60,7 @@ export interface NutrientInfo {
 export type NutrientTotals = Record<string, number>;
 
 export interface MacroTargets {
+  calories: number;
   protein: number;
   carbs: number;
   fat: number;
@@ -73,3 +76,10 @@ export interface FoodMacroOverride {
 }
 
 export type FoodMacroOverrides = Record<string, FoodMacroOverride>;
+
+export interface UserProfile {
+  gender: 'male' | 'female';
+  age: number;
+  weightKg: number;
+  heightCm: number;
+}

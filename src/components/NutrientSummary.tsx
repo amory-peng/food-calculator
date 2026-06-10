@@ -1,30 +1,26 @@
 import { NutrientProgressBar } from './NutrientProgressBar';
-import { nutrients } from '../data/rda';
-import type { NutrientTotals, MacroTargets } from '../types';
+import { nutrients, getProfileNutrients } from '../data/rda';
+import type { NutrientTotals, MacroTargets, UserProfile, NutrientInfo } from '../types';
 
 interface Props {
   totals: NutrientTotals;
   macroTargets: MacroTargets;
   defaultMacroTargets: MacroTargets;
   onMacroTargetsChange: (targets: MacroTargets) => void;
+  userProfile: UserProfile | null;
 }
 
-function computeCalorieTarget(targets: MacroTargets): number {
-  return targets.protein * 4 + targets.carbs * 4 + targets.fat * 9;
-}
-
-export function NutrientSummary({ totals, macroTargets, defaultMacroTargets, onMacroTargetsChange }: Props) {
-  const vitamins = nutrients.filter(n => n.category === 'vitamin');
-  const minerals = nutrients.filter(n => n.category === 'mineral');
-
-  const calorieTarget = computeCalorieTarget(macroTargets);
+export function NutrientSummary({ totals, macroTargets, defaultMacroTargets, onMacroTargetsChange, userProfile }: Props) {
+  const activeNutrients: NutrientInfo[] = userProfile ? getProfileNutrients(userProfile) : nutrients;
+  const vitamins = activeNutrients.filter(n => n.category === 'vitamin');
+  const minerals = activeNutrients.filter(n => n.category === 'mineral');
 
   const macroNutrients = [
-    { key: 'calories', label: 'Calories', unit: 'kcal', rda: calorieTarget, category: 'macro' as const, editable: false },
-    { key: 'protein', label: 'Protein', unit: 'g', rda: macroTargets.protein, category: 'macro' as const, editable: true },
-    { key: 'carbs', label: 'Carbs', unit: 'g', rda: macroTargets.carbs, category: 'macro' as const, editable: true },
-    { key: 'fat', label: 'Fat', unit: 'g', rda: macroTargets.fat, category: 'macro' as const, editable: true },
-    { key: 'fiber', label: 'Fiber', unit: 'g', rda: macroTargets.fiber, category: 'macro' as const, editable: true },
+    { key: 'calories', label: 'Calories', unit: 'kcal', rda: macroTargets.calories, category: 'macro' as const },
+    { key: 'protein', label: 'Protein', unit: 'g', rda: macroTargets.protein, category: 'macro' as const },
+    { key: 'carbs', label: 'Carbs', unit: 'g', rda: macroTargets.carbs, category: 'macro' as const },
+    { key: 'fat', label: 'Fat', unit: 'g', rda: macroTargets.fat, category: 'macro' as const },
+    { key: 'fiber', label: 'Fiber', unit: 'g', rda: macroTargets.fiber, category: 'macro' as const },
   ];
 
   function handleTargetChange(key: keyof MacroTargets, value: string) {
@@ -56,23 +52,16 @@ export function NutrientSummary({ totals, macroTargets, defaultMacroTargets, onM
                 <div className="flex-1">
                   <NutrientProgressBar nutrient={n} current={totals[n.key] || 0} />
                 </div>
-                {n.editable && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <input
-                      type="number"
-                      min="0"
-                      value={macroTargets[n.key as keyof MacroTargets] || ''}
-                      onChange={e => handleTargetChange(n.key as keyof MacroTargets, e.target.value)}
-                      className="w-16 px-1.5 py-0.5 bg-gray-900 border border-gray-600 rounded text-xs text-right text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <span className="text-[10px] text-gray-500">{n.unit}</span>
-                  </div>
-                )}
-                {!n.editable && (
-                  <div className="shrink-0 w-[78px] text-right">
-                    <span className="text-[10px] text-gray-500">{calorieTarget} kcal</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    min="0"
+                    value={macroTargets[n.key as keyof MacroTargets] || ''}
+                    onChange={e => handleTargetChange(n.key as keyof MacroTargets, e.target.value)}
+                    className="w-16 px-1.5 py-0.5 bg-gray-900 border border-gray-600 rounded text-xs text-right text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-[10px] text-gray-500">{n.unit}</span>
+                </div>
               </div>
             ))}
           </div>

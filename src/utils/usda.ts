@@ -93,6 +93,7 @@ export async function searchUsda(query: string, page = 1): Promise<UsdaSearchRes
   });
 
   const res = await fetch(`${BASE_URL}/foods/search?${params}`);
+  if (res.status === 429) throw new Error('RATE_LIMITED');
   if (!res.ok) throw new Error(`USDA API error: ${res.status}`);
 
   const data = await res.json();

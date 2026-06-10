@@ -1,5 +1,6 @@
-import type { NutrientInfo } from '../types';
+import type { NutrientInfo, UserProfile, MacroTargets } from '../types';
 
+// Base RDA values (used as fallback when no profile is set)
 export const nutrients: NutrientInfo[] = [
   { key: 'calories', label: 'Calories', unit: 'kcal', rda: 2000, category: 'macro' },
   { key: 'protein', label: 'Protein', unit: 'g', rda: 50, category: 'macro' },
@@ -30,3 +31,76 @@ export const nutrients: NutrientInfo[] = [
   { key: 'iodine', label: 'Iodine', unit: 'mcg', rda: 150, category: 'mineral' },
   { key: 'phosphorus', label: 'Phosphorus', unit: 'mg', rda: 700, category: 'mineral' },
 ];
+
+// NIH/IOM Dietary Reference Intakes by gender and age
+// Sources: NIH Office of Dietary Supplements, IOM DRI tables
+function getMicroRda(key: string, gender: 'male' | 'female', age: number): number | null {
+  const m = gender === 'male';
+
+  switch (key) {
+    // Vitamins
+    case 'vitaminA': return m ? 900 : 700; // mcg RAE
+    case 'vitaminC': return m ? 90 : 75;
+    case 'vitaminD': return age >= 71 ? 20 : 15;
+    case 'vitaminE': return 15;
+    case 'vitaminK': return m ? 120 : 90;
+    case 'vitaminB6': return age >= 51 ? (m ? 1.7 : 1.5) : 1.3;
+    case 'vitaminB12': return 2.4;
+    case 'thiamin': return m ? 1.2 : 1.1;
+    case 'riboflavin': return m ? 1.3 : 1.1;
+    case 'niacin': return m ? 16 : 14;
+    case 'folate': return 400;
+    case 'choline': return m ? 550 : 425;
+
+    // Minerals
+    case 'calcium': return age >= 51 && !m ? 1200 : age >= 71 ? 1200 : 1000;
+    case 'iron': return (!m && age <= 50) ? 18 : 8;
+    case 'magnesium': return m ? (age >= 31 ? 420 : 400) : (age >= 31 ? 320 : 310);
+    case 'potassium': return m ? 3400 : 2600;
+    case 'sodium': return 2300;
+    case 'zinc': return m ? 11 : 8;
+    case 'selenium': return 55;
+    case 'copper': return 0.9;
+    case 'manganese': return m ? 2.3 : 1.8;
+    case 'iodine': return 150;
+    case 'phosphorus': return 700;
+
+    default: return null;
+  }
+}
+
+// Mifflin-St Jeor equation for BMR (sedentary multiplier 1.2 applied)
+function estimateTDEE(profile: UserProfile): number {
+  const { gender, age, weightKg, heightCm } = profile;
+  let bmr: number;
+  if (gender === 'male') {
+    bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+  } else {
+    bmr = 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+  }
+  return Math.round(bmr * 1.2);
+}
+
+export function getProfileNutrients(profile: UserProfile): NutrientInfo[] {
+  return nutrients.map(n => {
+    if (n.category === 'macro') return n; // macros handled separately
+    const rda = getMicroRda(n.key, profile.gender, profile.age);
+    return rda !== null ? { ...n, rda } : n;
+  });
+}
+
+export function getProfileMacroDefaults(profile: UserProfile): MacroTargets {
+  const tdee = estimateTDEE(profile);
+  // Protein: 0.8g/kg minimum, use 1.0g/kg as practical target
+  const protein = Math.round(profile.weightKg * 1.0);
+  // Fiber: male 38g, female 25g (AI values from IOM)
+  const fiber = profile.gender === 'male' ? 38 : 25;
+  // Fat: 25-35% of calories, use 30%
+  const fatCals = tdee * 0.30;
+  const fat = Math.round(fatCals / 9);
+  // Carbs: remainder
+  const carbCals = tdee - (protein * 4) - (fat * 9);
+  const carbs = Math.round(carbCals / 4);
+
+  return { calories: tdee, protein, carbs, fat, fiber };
+}
